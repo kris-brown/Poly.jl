@@ -2,7 +2,7 @@
 """
 module SumProdPolynomials
 export AbstractSumProdPoly, SumProdPoly, modes, signatures,
-  plus, times, otimes, ⊗, pairsum_mapout
+  plus, times, otimes, ⊗, pairsum_mapout, print_latex
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
 using ..FinPolynomials
@@ -40,6 +40,18 @@ end
 const AbstractSumProdPoly = AbstractACSetType(SumProdPolySchema)
 const SumProdPoly = ACSetType(SumProdPolySchema,
                               index=[:mode,:out_mode,:signature])
+function Base.show(io::IO, mime::MIME"text/latex", p::AbstractSumProdPoly)
+  function show_monomial(i::Int)::String
+    base = join(p[:out_type][incident(p, i, :out_mode)], "⋅")
+    exp = join([join(p[:in_type][incident(p, s, :signature)], "⋅")
+                     for s in incident(p, i, :mode)], "+")
+    return "$base y ^{$exp}"
+  end
+  expr = join(map(show_monomial, parts(p, :Mode)), " + ")
+  print(io, "\$ $expr \$")
+  
+end
+
 
 function (::Type{P})(modes::AbstractVector) where P <: AbstractSumProdPoly
   p = P()
@@ -110,6 +122,7 @@ function otimes(p::SumProdPoly{Symbol}, q::SumProdPoly{Symbol})::SumProdPoly{Sym
     return r
 
 end
+⊗(p::AbstractSumProdPoly, q::AbstractSumProdPoly) = otimes(p, q)
 
 """
 O₁M₂+M₁O₂ ⟶ M₁M₂ ⟵ S₁M₂+M₁S₂ ⟵ I₁M₂+M₁I₂
@@ -136,24 +149,18 @@ function times(p::SumProdPoly{Symbol}, q::SumProdPoly{Symbol}) :: SumProdPoly{Sy
     
     sig1 = product(FinFunction(p, :signature), id(FinSet(q, :Mode)))
     sig2 = product(id(FinSet(p, :Mode)), FinFunction(q, :signature))
-
-    println("sig1 $sig1\n sig2 $sig2")
-    sig = coproduct(sig1, sig2)
-    println("sig1+sig2 $sig $(collect(sig))")
+    sig  = coproduct(sig1, sig2)
     add_parts!(r, :Mode, pmodes*qmodes)
     add_parts!(r, :Signature, pmodes*qsigs + qmodes*psigs,
                mode=collect(fs_sig.h))
 
     add_parts!(r, :Out, nparts(p, :Out)*qmodes + nparts(q, :Out)*pmodes,
                out_mode = collect(fs_out.h), out_type=ot)
-    println("sig1+sig2 $sig $(collect(sig))\n $(nparts(p, :In)*qmodes + nparts(q, :In)*pmodes)")
     add_parts!(r, :In, nparts(p, :In)*qmodes + nparts(q, :In)*pmodes,
-              signature=collect(sig), in_type=it) # BUG IN sig , 
-    # 
-
+              signature=collect(sig), in_type=it)
     return r
-
 end
+Base.:*(p::AbstractSumProdPoly, q::AbstractSumProdPoly) = times(p, q)
 
 function pairsum_mapout(ai_jb::Fibered_sum, at::Vector, bt::Vector)
 

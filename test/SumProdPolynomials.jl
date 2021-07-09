@@ -12,20 +12,19 @@ q = SumProdPoly{Symbol}([ [[:A]] => [:B] ])
 # y + A⋅y^(BS)
 r = SumProdPoly{Symbol}([ [[:B],[:S]] => [:A] , [[]] => [] ])
 
-@test p+q == SumProdPoly{Symbol}([
- [[:B]] => [:S], [[:S]] => [:S,:A], [[:A]] => [:B],
-])
+p_plus_q_x = SumProdPoly{Symbol}([
+    [[:B]] => [:S], [[:S]] => [:S,:A], [[:A]] => [:B]])
+
+@test is_isomorphic(p+q, p_plus_q_x)
 
 # Expected
-pr_x = SumProdPoly{Symbol}([
+p_ot_r_x = SumProdPoly{Symbol}([
            [[:B,:B],[:B,:S]] => [:A,:S],
            [[:B,:S], [:S,:S]] => [:S,:A,:A],
            [[:B]] => [:S],
            [[:S]] => [:S,:A]])
 
-pr = otimes(p,r)
-
-@test is_isomorphic(pr,pr_x)
+@test is_isomorphic(p⊗r,p_ot_r_x)
 
 p_times_r_x = SumProdPoly{Symbol}([ # Expected
             [[:B],[:B],[:S]] => [:A,:S],
